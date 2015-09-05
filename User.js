@@ -1,5 +1,6 @@
-var User = function(number){
+var User = function(number, email){
 	this.number = number;
+	this.email = email;
 }
 
 User.prototype.ready = function(){

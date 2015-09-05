@@ -1,4 +1,8 @@
 {
 	"TWILIO_SID":"ayyyyyyy",
-	"TWILIO_TOKEN":"lmao"
+	"TWILIO_TOKEN":"lmao",
+	"TWILIO_NUMBER": "+11234567890",
+	"UBER_CLIENT_ID": "dorem",
+	"UBER_CLIENT_SECRET": "ipsum",
+	"UBER_SERVER_TOKEN": "aaaaaa"
 }

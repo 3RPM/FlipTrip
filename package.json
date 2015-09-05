@@ -21,6 +21,9 @@
     "body-parser": "^1.13.3",
     "express": "^4.13.3",
     "node-geocoder": "^3.0.0",
+    "node-uber": "0.0.6",
+    "querystring": "^0.2.0",
+    "request": "^2.61.0",
     "twilio": "^2.3.0"
   }
 }

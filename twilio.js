@@ -1,38 +1,69 @@
 var config = require('./config.json');
+
+var Uber = require('node-uber');
+
 var accountSid = config["TWILIO_SID"];
 var authToken = config["TWILIO_TOKEN"];
+var number = config["TWILIO_NUMBER"]
+
+var uberClientId = config["UBER_CLIENT_ID"]
+var uberClientSecret = config["UBER_CLIENT_SECRET"]
+var uberServerToken = config["UBER_SERVER_TOKEN"]
+
+var querystring = require('querystring');
+var request = require('request');
+
 var client = require('twilio')(accountSid, authToken);
+
+var User = require("./User")
+
+
+
+var expressPort = 3000;
 
 var bodyParser = require("body-parser");
 var express = require('express');
+
 var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
 
-var User = require("./User")
+
+var uberClient = new Uber({
+	client_id: uberClientId,
+	client_secret: uberClientSecret,
+	server_token: uberServerToken,
+	redirect_uri: 'http://localhost:' + expressPort + '/auth',
+	name: 'Stoober'
+});
+
 var users = {} 
+
+var unclaimedEmails = [];
 // { '+12027657424': 
-//    { number: '+12027657424',
-//      pickupAddress: '7609 Leonard Dr',
-//      dropoffAddress: ' 22043 Braddock Rd' } }
+//	{ number: '+12027657424',
+//		pickupAddress: '7609 Leonard Dr',
+//		dropoffAddress: ' 22043 Braddock Rd' } }
 
 var startPhrases = ["send me an uber", "hmu"]
 var endPhrases = ["stop", "cancel"]
 
 var geocoder = require('node-geocoder')('google')
 console.log(geocoder.geocode)
+
+var emailPhoneMap = {}
  
 function sendMessage(toNum, bodyText){ 
 	client.messages.create({
-	    body: bodyText,
-	    to: toNum,
-	    from: "+16467594338",
+		body: bodyText,
+		to: toNum,
+		from: "+16467594338",
 		}, function(err, message) {
 			if(err){
 				console.log(err)
 			}
 			else{
-		    	// console.log(message)
+				// console.log(message)
 			}
 	});
 }
@@ -43,54 +74,70 @@ app.post("/", function(req, res){
 
 	console.log(f, "said:")
 	console.log(b)
-	
-	if(startPhrases.indexOf(b.toLowerCase()) > -1){
-		users[f] = new User(f);
-		sendMessage(f, "To get started, send us the address of where you are now!")
+	if(b.toLowerCase().indexOf("claim") == 0 && !users[f]){
+		var email = b.toLowerCase().substring("claim".length).trim()
+		if(unclaimedEmails.indexOf(email) == -1)
+			sendMessage(f, "Authenticate yourself first!")
+		else{
+			users[f] = new User(f, email);
+			unclaimedEmails.splice(unclaimedEmails.indexOf(email), 1)
+			sendMessage(f, "Successfully verified!")
+		}
+
 		end()
-	}
-	else if(users[f] && !users[f].pickupAddress){
-		addressToLatLon(b, function(latLon){
-			console.log(latLon)
-			if(latLon){
-				users[f].pickupLocation = latLon
-				var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". Now send us the address of where you want to go"
-				sendMessage(f, m)
-			}
-			else{
-				sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
-			}
-			end()
-		})
-	}
-	else if(users[f] && !users[f].dropoffAddress){
-		addressToLatLon(b, function(latLon){
-			if(latLon){
-				users[f].dropoffLocation = latLon
-				var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". We'll send you an Uber and let you know when its on its way"
-				sendMessage(f, m)
-				sendUber(user, function(){
-					//...
-					end()
-				})
-			}
-			else{
-				sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
-				end()
-			}
-		})
-	}
-	else if(endPhrases.indexOf(b.toLowerCase()) > -1){{
-		killUber(function(){
-			end()
-		})
-		//end request with uber API
 		
 	}
-	else{
-		sendMessage("To request an uber, tell us 'Send me an Uber' or 'hmu'")
-		end()
+	else if(users[f]){
+
+		if(startPhrases.indexOf(b.toLowerCase()) > -1){
+			sendMessage(f, "To get started, send us the address of where you are now!")
+			end()
+		}
+		else if(users[f] && !users[f].pickupAddress){
+			addressToLatLon(b, function(latLon){
+				console.log(latLon)
+				if(latLon){
+					users[f].pickupLocation = latLon
+					var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". Now send us the address of where you want to go"
+					sendMessage(f, m)
+				}
+				else{
+					sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
+				}
+				end()
+			})
+		}
+		else if(users[f] && !users[f].dropoffAddress){
+			addressToLatLon(b, function(latLon){
+				if(latLon){
+					users[f].dropoffLocation = latLon
+					var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". We'll send you an Uber and let you know when its on its way"
+					sendMessage(f, m)
+					sendUber(user, function(){
+						//...
+						end()
+					})
+				}
+				else{
+					sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
+					end()
+				}
+			})
+		}
+		else if(endPhrases.indexOf(b.toLowerCase()) > -1){
+			killUber(function(){
+				end()
+			})
+			//end request with uber API
+			
+		}
+		else{
+			sendMessage("To request an uber, tell us 'Send me an Uber' or 'hmu'")
+			end()
+		}
+
 	}
+	
 	
 
 	function end(){
@@ -99,6 +146,8 @@ app.post("/", function(req, res){
 	}
 
 })
+
+//create webhook to clear location/destination afterwards
 
 function addressToLatLon(s, callback){
 	console.log("started geocoding")
@@ -159,11 +208,94 @@ app.get("/", function(req, res){
 	res.end(JSON.stringify(users, null, 2));
 })
 
-var server = app.listen(3000, function () {
-  var host = server.address().address;
-  var port = server.address().port;
+var server = app.listen(expressPort, function () {
+	var host = server.address().address;
+	var port = server.address().port;
 
-  console.log('Example app listening at http://%s:%s', host, port);
+	console.log('Example app listening at http://%s:%s', host, port);
 });
+
+
+
+app.get("/auth", function(req, res){
+	var authCode = req.query.code
+	console.log(authCode)
+
+	uberClient.authorization(
+		{
+			authorization_code: authCode
+		}, 
+		function (err, accessToken, refreshToken) {
+
+			request(
+			{
+				headers: {
+					'Authorization': 'Bearer ' + accessToken
+				},
+				uri: "https://api.uber.com/v1/me",
+				method: "GET"
+			},function (err, res, body) {
+				console.log("---me")
+				console.log(res.body)
+				var email = res.body.email;
+				if(emailPhoneMap[email])
+					return end()
+
+				unclaimedEmails.push(email.toLowerCase())
+
+				console.log("---/me")
+			})
+
+
+		}
+	);
+
+
+})
+
+// app.get("/auth", function(req, res){
+// 	var authCode = req.query.code
+// 	console.log(authCode)
+// 	console.log("A")
+
+
+// 	var authForm = {
+// 		"client_secret": uberClientSecret,
+// 		"client_id": uberClientId,
+// 		"grant_type": "authorization_code",
+// 		"redirect_uri": "http://localhost:" + expressPort,
+// 		"code": authCode
+// 	};
+
+// 	var formData = querystring.stringify(authForm);
+
+// 	request({
+// 		uri: "https://login.uber.com/oauth/token",
+// 		body: formData,
+// 		method: "POST"
+// 		}, function (err, res, body) {
+// 			console.log(res.body)
+
+// 			var accessToken = res.body.access_token
+
+
+// 			request(
+// 			{
+// 				headers: {
+// 					'Authorization': 'Bearer ' + accessToken
+// 				},
+// 				uri: "https://api.uber.com/v1/me",
+// 				body: formData,
+// 				method: "GET"
+// 			},function (err, res, body) {
+// 				console.log("---me")
+// 				console.log(res.body)
+// 				console.log("---/me")
+// 			})
+
+// 	});
+
+
+// })
 
 // console.log(addressToLatLon("7609 Leonard Drive"))
