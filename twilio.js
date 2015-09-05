@@ -16,7 +16,8 @@ var users = {}
 //      pickupAddress: '7609 Leonard Dr',
 //      dropoffAddress: ' 22043 Braddock Rd' } }
 
-var startPhrases = ["Send me an Uber", "hmu"]
+var startPhrases = ["send me an uber", "hmu"]
+var endPhrases = ["stop", "cancel"]
 
 var geocoder = require('node-geocoder')('google')
 console.log(geocoder.geocode)
@@ -43,7 +44,7 @@ app.post("/", function(req, res){
 	console.log(f, "said:")
 	console.log(b)
 	
-	if(startPhrases.indexOf(b) > -1){
+	if(startPhrases.indexOf(b.toLowerCase()) > -1){
 		users[f] = new User(f);
 		sendMessage(f, "To get started, send us the address of where you are now!")
 		end()
@@ -55,12 +56,11 @@ app.post("/", function(req, res){
 				users[f].pickupLocation = latLon
 				var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". Now send us the address of where you want to go"
 				sendMessage(f, m)
-				end()
 			}
 			else{
 				sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
-				end()
 			}
+			end()
 		})
 	}
 	else if(users[f] && !users[f].dropoffAddress){
@@ -69,13 +69,23 @@ app.post("/", function(req, res){
 				users[f].dropoffLocation = latLon
 				var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". We'll send you an Uber and let you know when its on its way"
 				sendMessage(f, m)
-				end()
+				sendUber(user, function(){
+					//...
+					end()
+				})
 			}
 			else{
 				sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
 				end()
 			}
 		})
+	}
+	else if(endPhrases.indexOf(b.toLowerCase()) > -1){{
+		killUber(function(){
+			end()
+		})
+		//end request with uber API
+		
 	}
 	else{
 		sendMessage("To request an uber, tell us 'Send me an Uber' or 'hmu'")
@@ -120,15 +130,28 @@ function addressToLatLon(s, callback){
 	});
 }
 
-function sendUber(user){
+
+function sendUber(user, callback){
 	console.log(user);
-	//user.number
-	//user.pickupAddress
-	//user.dropoffAddress
 
+	//in success of async call
+	//uberAPIrequest(user, function(e, r){
+		//if(!e)
+			sendMessage(f, "Excellent! Your Uber will arrive soon - we'll text you some details before then! If you wish to cancel your ride, text 'Stop' or 'Cancel'")
+		//else
+			//sendMessage(f, "Oh no! We couldn't get your Uber")
+	//})
+	
+}
 
-
-	sendMessage(f, "Thanks, we're sending you an uber now!")
+function killUber(user, callback){
+	//in success of async call
+	//uberAPIrequest(user, function(e, r){
+		//if(!e)
+			sendMessage(f, "We cancelled your Uber!")
+		//else
+			//sendMessage(f, "Oh no! We couldn't cancel your Uber")
+	//})
 }
 
 app.get("/", function(req, res){
