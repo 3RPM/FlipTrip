@@ -18,6 +18,8 @@
   "homepage": "https://github.com/3RPM/PennAppsXII",
   "devDependencies": {},
   "dependencies": {
+    "body-parser": "^1.13.3",
+    "express": "^4.13.3",
     "twilio": "^2.3.0"
   }
 }
