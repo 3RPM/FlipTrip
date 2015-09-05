@@ -53,7 +53,7 @@ app.post("/", function(req, res){
 			console.log(latLon)
 			if(latLon){
 				users[f].pickupLocation = latLon
-				var m = "Perfect, you're at "+latLon[latitude]+", "+latLon[longitude]+". Now send us the address of where you want to go"
+				var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". Now send us the address of where you want to go"
 				sendMessage(f, m)
 				end()
 			}
@@ -67,7 +67,7 @@ app.post("/", function(req, res){
 		addressToLatLon(b, function(latLon){
 			if(latLon){
 				users[f].dropoffLocation = latLon
-				var m = "Perfect, you're at "+latLon[latitude]+", "+latLon[longitude]+". We'll send you an Uber and let you know when its on its way"
+				var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". We'll send you an Uber and let you know when its on its way"
 				sendMessage(f, m)
 				end()
 			}
