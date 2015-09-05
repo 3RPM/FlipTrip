@@ -41,6 +41,8 @@ var uberClient = new Uber({
 var users = {} 
 
 var unclaimedEmails = [];
+
+var emailAccessMap = {}
 // { '+12027657424': 
 //	{ number: '+12027657424',
 //		pickupAddress: '7609 Leonard Dr',
@@ -82,6 +84,8 @@ app.post("/", function(req, res){
 		else{
 			users[f] = new User(f, email);
 			unclaimedEmails.splice(unclaimedEmails.indexOf(email), 1)
+			users[f].accessToken = emailAccessMap[email]
+
 			sendMessage(f, "Successfully verified!")
 		}
 
@@ -123,7 +127,7 @@ app.post("/", function(req, res){
 						lon: latLon.lon
 					}
 					sendMessage(f, m)
-					sendUber(user, function(){
+					sendUber(users[f], function(){
 						//...
 						end()
 					})
@@ -135,7 +139,10 @@ app.post("/", function(req, res){
 			})
 		}
 		else if(endPhrases.indexOf(b.toLowerCase()) > -1){
-			killUber(function(){
+			if(!users[f].requestId)
+				return end()
+
+			killUber(users[f], function(){
 				end()
 			})
 			//end request with uber API
@@ -204,28 +211,26 @@ function sendUber(user, callback){
 	var formData = querystring.stringify(requestForm);
 
 	request({
+		headers: {
+			'Authorization': 'Bearer ' + user.accessToken
+		},
 		uri: "https://login.uber.com/v1/requests",
 		body: formData,
 		method: "POST"
 		}, function (err, res, body) {
-			if(!err)
+			if(!err){
+				users[user.number].requestId = res.body["request_id"]
 				sendMessage(user.number, "Excellent! Your Uber will arrive in around " + res.body.eta + " minutes - we'll text you some details before then! If you wish to cancel your ride, text 'Stop' or 'Cancel'")
+			}
 			else
 				sendMessage(user.number, "There was an error ordering your Uber! :(")
 	});
 
-
-	//in success of async call
-	//uberAPIrequest(user, function(e, r){
-		//if(!e)
-
-		//else
-			//sendMessage(f, "Oh no! We couldn't get your Uber")
-	//})
 	
 }
 
 function killUber(user, callback){
+
 	//in success of async call
 	//uberAPIrequest(user, function(e, r){
 		//if(!e)
@@ -233,6 +238,26 @@ function killUber(user, callback){
 		//else
 			//sendMessage(f, "Oh no! We couldn't cancel your Uber")
 	//})
+
+
+
+	request({
+		headers: {
+			'Authorization': 'Bearer ' + user.accessToken
+		},
+		uri: "https://api.uber.com/v1/requests/" + user.requestId,
+		body: formData,
+		method: "DELETE"
+		}, function (err, res, body) {
+			if(!err){
+				user.reset()
+				sendMessage(user.number, "You've cancelled your Uber")
+			}
+			else
+				sendMessage(user.number, "There was an error cancelling your Uber! :(")
+	});
+
+
 }
 
 app.get("/", function(req, res){
@@ -259,41 +284,26 @@ app.get("/auth", function(req, res){
 		}, 
 		function (err, accessToken, refreshToken) {
 
-			// request(
-			// {
-			// 	headers: {
-			// 		'Authorization': 'Bearer ' + accessToken
-			// 	},
-			// 	uri: "https://api.uber.com/v1/me",
-			// 	method: "GET"
-			// },function (err, res, body) {
-			// 	console.log("---me")
-			// 	console.log(res.body)
-			// 	var email = res.body.email;
-			// 	if(emailPhoneMap[email])
-			// 		return end()
-
-			// 	unclaimedEmails.push(email.toLowerCase())
-
-			// 	console.log("---/me")
-			// })
-
 			request(
 			{
 				headers: {
 					'Authorization': 'Bearer ' + accessToken
 				},
-				uri: "https://api.uber.com/v1/products?latitude=39.9011710&longitude=-75.1726330",
+				uri: "https://api.uber.com/v1/me",
 				method: "GET"
-			},function (e, r, body) {
-				console.log("---products")
-				console.log(r.body)
-				
+			},function (err, res, body) {
+				console.log("---me")
+				console.log(res.body)
+				var email = res.body.email;
+				if(emailPhoneMap[email])
+					return end()
 
-				console.log("---/products")
-				res.status(200)
-				res.end()
+				unclaimedEmails.push(email.toLowerCase())
+				emailAccessMap[email] = accessToken
+
+				console.log("---/me")
 			})
+
 
 
 		}

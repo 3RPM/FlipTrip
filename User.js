@@ -11,6 +11,8 @@ var User = function(number, email){
 		lat: null,
 		lon: null
 	}
+	this.requestId = null;
+	this.accessToken = null;
 }
 
 User.prototype.ready = function(){
@@ -28,6 +30,8 @@ User.prototype.reset = function(){
 		lat: null,
 		lon: null
 	}
+	this.requestId = null;
+	this.accessToken = null;
 	return true;
 }
 
