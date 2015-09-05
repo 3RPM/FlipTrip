@@ -1,0 +1,19 @@
+{
+  "name": "PennAppsXII",
+  "version": "1.0.0",
+  "description": "Uber for Dumb-Phones",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/3RPM/PennAppsXII"
+  },
+  "author": "Rushi Shah (@2016rshah)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/3RPM/PennAppsXII/issues"
+  },
+  "homepage": "https://github.com/3RPM/PennAppsXII"
+}
