@@ -42,33 +42,51 @@ app.post("/", function(req, res){
 	
 	if(startPhrases.indexOf(b) > -1){
 		users[f] = new User(f);
-		sendMessage(f, "Lets get started. Send us the address of where you are now, then the word AND, then your destination address.")
+		sendMessage(f, "To get started, send us the address of where you are now!")
+		end()
 	}
-	else if(b.indexOf("AND")> -1){
-		var addresses = b.split("AND")
-
-		var pickupAddress = addresses[0]
-		users[f].pickupAddress = pickupAddress
-
-		var dropoffAddress = addresses[1]
-		users[f].dropoffAddress = dropoffAddress
-
-		console.log(users)
-
-		if(users[f].ready()){
-			//sendUber(users[f])
+	else if(users[f] && !users[f].pickupAddress){
+		if(validAddress(b)){
+			users[f].pickupAddress = b
+			sendMessage(f, "Perfect, now hit us up with the address of where you want to go")
+			end()
 		}
 		else{
-			sendMessage("Try that again");
+			sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
+			end()
+		}
+	}
+	else if(users[f] && !users[f].dropoffAddress){
+		if(validAddress(b)){
+			users[f].dropoffAddress = b
+			sendMessage(f, "Perfect, now hit us up with the address of where you want to go")
+			end()
+		}
+		else{
+			sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
+			end()
 		}
 	}
 	else{
-		sendMessage(f, "Say one of the start phrases to get started! For example, text us 'Send me an Uber'")
+		sendMessage("To request an uber, tell us 'Send me an Uber' or 'hmu'")
+		end()
 	}
-	res.status(200);
-	res.end("Aight");
+	
+
+	function end(){
+		res.status(200);
+		res.end("Aight");
+	}
 
 })
+
+
+function validAddress(s){
+	//TODO
+	return true;
+}
+
+
 
 function sendUber(user){
 	console.log(user);
@@ -76,6 +94,7 @@ function sendUber(user){
 	//user.pickupAddress
 	//user.dropoffAddress
 
+	//TODO
 
 	sendMessage(f, "Thanks, we're sending you an uber now!")
 }
