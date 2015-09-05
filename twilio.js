@@ -18,6 +18,7 @@ var client = require('twilio')(accountSid, authToken);
 var User = require("./User")
 
 
+var phillyUberXId = "1a150e95-d687-454b-9878-2942a9448693"
 
 var expressPort = 3000;
 
@@ -91,6 +92,7 @@ app.post("/", function(req, res){
 
 		if(startPhrases.indexOf(b.toLowerCase()) > -1){
 			sendMessage(f, "To get started, send us the address of where you are now!")
+			user[f].reset()
 			end()
 		}
 		else if(users[f] && !users[f].pickupAddress){
@@ -100,6 +102,10 @@ app.post("/", function(req, res){
 					users[f].pickupLocation = latLon
 					var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". Now send us the address of where you want to go"
 					sendMessage(f, m)
+					users[f].pickupCoords = {
+						lat: latLon.lat,
+						lon: latLon.lon
+					}
 				}
 				else{
 					sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
@@ -112,6 +118,10 @@ app.post("/", function(req, res){
 				if(latLon){
 					users[f].dropoffLocation = latLon
 					var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". We'll send you an Uber and let you know when its on its way"
+					users[f].dropoffCoords = {
+						lat: latLon.lat,
+						lon: latLon.lon
+					}
 					sendMessage(f, m)
 					sendUber(user, function(){
 						//...
@@ -183,10 +193,32 @@ function addressToLatLon(s, callback){
 function sendUber(user, callback){
 	console.log(user);
 
+	var requestForm = {
+		"product_id": phillyUberXId,
+		"start_latitude": user.pickupCoords.lat,
+		"start_longitude": user.pickupCoords.lon,
+		"end_latitude": user.dropoffCoords.lat,
+		"end_longitude": user.dropoffCoords.lon,
+	};
+
+	var formData = querystring.stringify(requestForm);
+
+	request({
+		uri: "https://login.uber.com/v1/requests",
+		body: formData,
+		method: "POST"
+		}, function (err, res, body) {
+			if(!err)
+				sendMessage(user.number, "Excellent! Your Uber will arrive in around " + res.body.eta + " minutes - we'll text you some details before then! If you wish to cancel your ride, text 'Stop' or 'Cancel'")
+			else
+				sendMessage(user.number, "There was an error ordering your Uber! :(")
+	});
+
+
 	//in success of async call
 	//uberAPIrequest(user, function(e, r){
 		//if(!e)
-			sendMessage(f, "Excellent! Your Uber will arrive soon - we'll text you some details before then! If you wish to cancel your ride, text 'Stop' or 'Cancel'")
+
 		//else
 			//sendMessage(f, "Oh no! We couldn't get your Uber")
 	//})
@@ -227,23 +259,40 @@ app.get("/auth", function(req, res){
 		}, 
 		function (err, accessToken, refreshToken) {
 
+			// request(
+			// {
+			// 	headers: {
+			// 		'Authorization': 'Bearer ' + accessToken
+			// 	},
+			// 	uri: "https://api.uber.com/v1/me",
+			// 	method: "GET"
+			// },function (err, res, body) {
+			// 	console.log("---me")
+			// 	console.log(res.body)
+			// 	var email = res.body.email;
+			// 	if(emailPhoneMap[email])
+			// 		return end()
+
+			// 	unclaimedEmails.push(email.toLowerCase())
+
+			// 	console.log("---/me")
+			// })
+
 			request(
 			{
 				headers: {
 					'Authorization': 'Bearer ' + accessToken
 				},
-				uri: "https://api.uber.com/v1/me",
+				uri: "https://api.uber.com/v1/products?latitude=39.9011710&longitude=-75.1726330",
 				method: "GET"
-			},function (err, res, body) {
-				console.log("---me")
-				console.log(res.body)
-				var email = res.body.email;
-				if(emailPhoneMap[email])
-					return end()
+			},function (e, r, body) {
+				console.log("---products")
+				console.log(r.body)
+				
 
-				unclaimedEmails.push(email.toLowerCase())
-
-				console.log("---/me")
+				console.log("---/products")
+				res.status(200)
+				res.end()
 			})
 
 
