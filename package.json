@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/3RPM/PennAppsXII/issues"
   },
-  "homepage": "https://github.com/3RPM/PennAppsXII"
+  "homepage": "https://github.com/3RPM/PennAppsXII",
+  "devDependencies": {},
+  "dependencies": {
+    "twilio": "^2.3.0"
+  }
 }
