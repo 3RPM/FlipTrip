@@ -17,6 +17,9 @@ var users = {}
 //      dropoffAddress: ' 22043 Braddock Rd' } }
 
 var startPhrases = ["Send me an Uber", "hmu"]
+
+var geocoder = require('node-geocoder')('google')
+console.log(geocoder.geocode)
  
 function sendMessage(toNum, bodyText){ 
 	client.messages.create({
@@ -46,26 +49,33 @@ app.post("/", function(req, res){
 		end()
 	}
 	else if(users[f] && !users[f].pickupAddress){
-		if(validAddress(b)){
-			users[f].pickupAddress = b
-			sendMessage(f, "Perfect, now hit us up with the address of where you want to go")
-			end()
-		}
-		else{
-			sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
-			end()
-		}
+		addressToLatLon(b, function(latLon){
+			console.log(latLon)
+			if(latLon){
+				users[f].pickupLocation = latLon
+				var m = "Perfect, you're at "+latLon[latitude]+", "+latLon[longitude]+". Now send us the address of where you want to go"
+				sendMessage(f, m)
+				end()
+			}
+			else{
+				sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
+				end()
+			}
+		})
 	}
 	else if(users[f] && !users[f].dropoffAddress){
-		if(validAddress(b)){
-			users[f].dropoffAddress = b
-			sendMessage(f, "Perfect, now hit us up with the address of where you want to go")
-			end()
-		}
-		else{
-			sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
-			end()
-		}
+		addressToLatLon(b, function(latLon){
+			if(latLon){
+				users[f].dropoffLocation = latLon
+				var m = "Perfect, you're at "+latLon[latitude]+", "+latLon[longitude]+". We'll send you an Uber and let you know when its on its way"
+				sendMessage(f, m)
+				end()
+			}
+			else{
+				sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
+				end()
+			}
+		})
 	}
 	else{
 		sendMessage("To request an uber, tell us 'Send me an Uber' or 'hmu'")
@@ -80,13 +90,35 @@ app.post("/", function(req, res){
 
 })
 
+function addressToLatLon(s, callback){
+	console.log("started geocoding")
+	console.log(s)
 
-function validAddress(s){
-	//TODO
-	return true;
+	geocoder.geocode(s, function(err, res) {
+		// console.log(err, res)
+		if(err){
+			console.log("idk 1")
+			console.log(err)
+			callback(false)
+		}
+		else{
+			if(res.length > 0){
+				r = res[0]
+				// console.log(r)
+				obj = {lat: r.latitude, lon:r.longitude}
+				// console.log(r.latitude)
+				// console.log(r.longitude)
+				console.log(obj)
+				callback(obj)
+			}
+			else{
+				console.log(res)
+				console.log("idk 2")
+				callback(false)
+			}
+		}
+	});
 }
-
-
 
 function sendUber(user){
 	console.log(user);
@@ -94,7 +126,7 @@ function sendUber(user){
 	//user.pickupAddress
 	//user.dropoffAddress
 
-	//TODO
+
 
 	sendMessage(f, "Thanks, we're sending you an uber now!")
 }
@@ -110,3 +142,5 @@ var server = app.listen(3000, function () {
 
   console.log('Example app listening at http://%s:%s', host, port);
 });
+
+// console.log(addressToLatLon("7609 Leonard Drive"))
