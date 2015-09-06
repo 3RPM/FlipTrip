@@ -20,7 +20,7 @@ var client = require('twilio')(accountSid, authToken);
 var User = require("./User")
 
 
-var phillyUberXId = "1a150e95-d687-454b-9878-2942a9448693"
+var uberXId = "1a150e95-d687-454b-9878-2942a9448693"
 
 var expressPort = config["PORT"];
 
@@ -211,7 +211,7 @@ function sendUber(user, callback, surgeId){
 	}
 
 	var requestForm = {
-		"product_id": phillyUberXId,
+		"product_id": uberXId,
 		"start_latitude": user.pickupCoords.lat,
 		"start_longitude": user.pickupCoords.lon,
 		"end_latitude": user.dropoffCoords.lat,
