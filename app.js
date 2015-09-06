@@ -51,7 +51,7 @@ var emailAccessMap = {}
 //		dropoffAddress: ' 22043 Braddock Rd' } }
 
 var startPhrases = ["send me an uber", "hmu"]
-var endPhrases = ["stop", "cancel"]
+var endPhrases = ["jk"]
 
 var geocoderHttpAdapter = 'https';
 
@@ -261,7 +261,7 @@ function sendUber(user, callback, surgeId){
 
 			if(!err){
 				users[user.number].requestId = res.body["request_id"]
-				sendMessage(user.number, "Excellent! Your Uber will arrive soon - we'll text you some details before then! If you wish to cancel your ride, text 'Stop' or 'Cancel'")
+				sendMessage(user.number, "Excellent! Your Uber will arrive soon - we'll text you some details before then! If you wish to cancel your ride, text 'jk'")
 			}
 			else{
 				console.log(err)
