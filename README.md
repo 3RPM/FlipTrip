@@ -23,6 +23,8 @@ This provides a way for those without smartphones to request Uber rides. It prov
 * Text `jk` to cancel your Uber
 * Text `?` for help
 
+Note: you don't actually need a location and destination "address". Anything that would work if you typed it into Google Maps would work, like just `Wells Fargo Center, PA` or `University of Pennsylvania`.
+
 
 ## WARNING
 
