@@ -30,6 +30,7 @@ var express = require('express');
 var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
+app.use(express.static('static'))
 
 
 var uberClient = new Uber({
@@ -258,7 +259,7 @@ function killUber(user, callback){
 }
 
 app.get("/", function(req, res){
-	res.sendfile('static/landing.html')
+	res.sendFile(__dirname + '/static/landing.html');
 })
 
 var server = app.listen(expressPort, function () {
