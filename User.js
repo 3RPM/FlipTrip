@@ -31,7 +31,6 @@ User.prototype.reset = function(){
 		lon: null
 	}
 	this.requestId = null;
-	this.accessToken = null;
 	return true;
 }
 

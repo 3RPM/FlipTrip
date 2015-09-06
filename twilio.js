@@ -6,6 +6,8 @@ var accountSid = config["TWILIO_SID"];
 var authToken = config["TWILIO_TOKEN"];
 var number = config["TWILIO_NUMBER"]
 
+var googleApiKey = config["GOOGLE_API_KEY"]
+
 var uberClientId = config["UBER_CLIENT_ID"]
 var uberClientSecret = config["UBER_CLIENT_SECRET"]
 var uberServerToken = config["UBER_SERVER_TOKEN"]
@@ -51,12 +53,24 @@ var emailAccessMap = {}
 var startPhrases = ["send me an uber", "hmu"]
 var endPhrases = ["stop", "cancel"]
 
-var geocoder = require('node-geocoder')('google')
+var geocoderHttpAdapter = 'https';
+
+var extra = {
+    apiKey: googleApiKey
+};
+
+var geocoder = require('node-geocoder')('google', geocoderHttpAdapter, extra)
+
+
+
 console.log(geocoder.geocode)
 
 var emailPhoneMap = {}
  
 function sendMessage(toNum, bodyText){ 
+
+	console.log("Sending to", toNum, ":", bodyText)
+
 	client.messages.create({
 		body: bodyText,
 		to: toNum,
@@ -77,16 +91,20 @@ app.post("/", function(req, res){
 
 	console.log(f, "said:")
 	console.log(b)
+	if(!f || !b)
+		return end()
+
 	if(b.toLowerCase().indexOf("claim") == 0 && !users[f]){
 		var email = b.toLowerCase().substring("claim".length).trim()
 		if(unclaimedEmails.indexOf(email) == -1)
 			sendMessage(f, "Authenticate yourself first!")
 		else{
 			users[f] = new User(f, email);
+			users[f].accessToken = emailAccessMap[email] + ""
 			unclaimedEmails.splice(unclaimedEmails.indexOf(email), 1)
-			users[f].accessToken = emailAccessMap[email]
 
 			sendMessage(f, "Successfully verified!")
+			console.log(users[f])
 		}
 
 		end()
@@ -94,22 +112,22 @@ app.post("/", function(req, res){
 	}
 	else if(users[f]){
 
+		console.log(b.toLowerCase())
+		console.log(startPhrases.indexOf(b.toLowerCase()))
+
 		if(startPhrases.indexOf(b.toLowerCase()) > -1){
 			sendMessage(f, "To get started, send us the address of where you are now!")
-			user[f].reset()
+
+			users[f].reset()
 			end()
 		}
-		else if(users[f] && !users[f].pickupAddress){
+		else if(users[f] && users[f].pickupCoords.lat === null){
 			addressToLatLon(b, function(latLon){
 				console.log(latLon)
 				if(latLon){
-					users[f].pickupLocation = latLon
+					users[f].pickupCoords = latLon
 					var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". Now send us the address of where you want to go"
 					sendMessage(f, m)
-					users[f].pickupCoords = {
-						lat: latLon.lat,
-						lon: latLon.lon
-					}
 				}
 				else{
 					sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
@@ -117,15 +135,12 @@ app.post("/", function(req, res){
 				end()
 			})
 		}
-		else if(users[f] && !users[f].dropoffAddress){
+		else if(users[f] && users[f].dropoffCoords.lat === null){
 			addressToLatLon(b, function(latLon){
 				if(latLon){
-					users[f].dropoffLocation = latLon
+					users[f].dropoffCoords = latLon
 					var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". We'll send you an Uber and let you know when its on its way"
-					users[f].dropoffCoords = {
-						lat: latLon.lat,
-						lon: latLon.lon
-					}
+
 					sendMessage(f, m)
 					sendUber(users[f], function(){
 						//...
@@ -149,7 +164,7 @@ app.post("/", function(req, res){
 			
 		}
 		else{
-			sendMessage("To request an uber, tell us 'Send me an Uber' or 'hmu'")
+			sendMessage(f, "To request an uber, tell us 'Send me an Uber' or 'hmu'")
 			end()
 		}
 
@@ -173,7 +188,6 @@ function addressToLatLon(s, callback){
 	geocoder.geocode(s, function(err, res) {
 		// console.log(err, res)
 		if(err){
-			console.log("idk 1")
 			console.log(err)
 			callback(false)
 		}
@@ -189,7 +203,6 @@ function addressToLatLon(s, callback){
 			}
 			else{
 				console.log(res)
-				console.log("idk 2")
 				callback(false)
 			}
 		}
@@ -197,8 +210,13 @@ function addressToLatLon(s, callback){
 }
 
 
-function sendUber(user, callback){
+function sendUber(user, callback, surgeId){
 	console.log(user);
+	console.log("About to send Uber")
+
+	if(surgeId){
+		console.log("ACCEPTING SURGE PRICING!!!!!")
+	}
 
 	var requestForm = {
 		"product_id": phillyUberXId,
@@ -208,22 +226,47 @@ function sendUber(user, callback){
 		"end_longitude": user.dropoffCoords.lon,
 	};
 
-	var formData = querystring.stringify(requestForm);
+	if(surgeId){
+		requestForm["surge_confirmation_id"] = surgeId
+	}
+
+
+	console.log("SendUber")
+	console.log(user)
 
 	request({
 		headers: {
 			'Authorization': 'Bearer ' + user.accessToken
 		},
-		uri: "https://login.uber.com/v1/requests",
-		body: formData,
+		uri: "https://api.uber.com/v1/requests",
+		// uri: "https://sandbox-api.uber.com/v1/sandbox/requests",
+		body: requestForm,
+		json: true,
 		method: "POST"
 		}, function (err, res, body) {
+
+			console.log("GOT RESPONSE")
+			console.log("BODY")
+			console.log(res.body)
+			console.log("END BODY")
+			if(err)
+				console.log(err)
+
+			console.log(typeof res.body)
+			if(typeof res.body == "string")
+				res.body = JSON.parse(res.body)
+
+			if(res.body.meta && res.body.meta.surge_confirmation && res.body.meta.surge_confirmation.surge_confirmation_id)
+				return sendUber(user, callback, res.body.meta.surge_confirmation.surge_confirmation_id)
+
 			if(!err){
 				users[user.number].requestId = res.body["request_id"]
 				sendMessage(user.number, "Excellent! Your Uber will arrive in around " + res.body.eta + " minutes - we'll text you some details before then! If you wish to cancel your ride, text 'Stop' or 'Cancel'")
 			}
-			else
+			else{
+				console.log(err)
 				sendMessage(user.number, "There was an error ordering your Uber! :(")
+			}
 	});
 
 	
@@ -253,8 +296,10 @@ function killUber(user, callback){
 				user.reset()
 				sendMessage(user.number, "You've cancelled your Uber")
 			}
-			else
+			else{
+				console.log(err)
 				sendMessage(user.number, "There was an error cancelling your Uber! :(")
+			}
 	});
 
 
@@ -262,7 +307,7 @@ function killUber(user, callback){
 
 app.get("/", function(req, res){
 	console.log(users);
-	res.end(JSON.stringify(users, null, 2));
+	res.end(JSON.stringify(users, null, 2) + "\n\n\n" + JSON.stringify(emailAccessMap, null, 2));
 })
 
 var server = app.listen(expressPort, function () {
@@ -273,6 +318,9 @@ var server = app.listen(expressPort, function () {
 });
 
 
+app.get("/verify", function(req, res){
+	res.redirect("http://login.uber.com/oauth/authorize?response_type=code&client_id=" + uberClientId + "&scope=profile%20history_lite%20history%20request")
+})
 
 app.get("/auth", function(req, res){
 	var authCode = req.query.code
@@ -291,17 +339,28 @@ app.get("/auth", function(req, res){
 				},
 				uri: "https://api.uber.com/v1/me",
 				method: "GET"
-			},function (err, res, body) {
+			},function (e, r, body) {
+				if(e)
+					console.log(e)
 				console.log("---me")
-				console.log(res.body)
-				var email = res.body.email;
+				r.body = JSON.parse(r.body)
+				console.log(r.body)
+				console.log(typeof r.body)
+				console.log(r.body.email)
+				var email = r.body.email;
 				if(emailPhoneMap[email])
 					return end()
 
-				unclaimedEmails.push(email.toLowerCase())
-				emailAccessMap[email] = accessToken
+				if(email){
+					unclaimedEmails.push(email.toLowerCase())
+					emailAccessMap[email] = accessToken	
+				}
+				
+				console.log(emailAccessMap)
 
 				console.log("---/me")
+				res.status(200)
+				res.end("Nice work. Now, text " + number + " 'Claim your@email.com', to verify your account.")
 			})
 
 
