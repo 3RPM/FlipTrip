@@ -61,10 +61,6 @@ var extra = {
 
 var geocoder = require('node-geocoder')('google', geocoderHttpAdapter, extra)
 
-
-
-console.log(geocoder.geocode)
-
 var emailPhoneMap = {}
  
 function sendMessage(toNum, bodyText){ 
@@ -91,6 +87,7 @@ app.post("/twilio_webhook", function(req, res){
 
 	console.log(f, "said:")
 	console.log(b)
+
 	if(!f || !b)
 		return end()
 
@@ -112,25 +109,21 @@ app.post("/twilio_webhook", function(req, res){
 	}
 	else if(users[f]){
 
-		console.log(b.toLowerCase())
-		console.log(startPhrases.indexOf(b.toLowerCase()))
-
 		if(startPhrases.indexOf(b.toLowerCase()) > -1){
 			sendMessage(f, "To get started, send us the address of where you are now!")
 
-			users[f].reset()
+			users[f].resetUser() 
 			end()
 		}
-		else if(users[f] && users[f].pickupCoords.lat === null){
+		else if(users[f] && users[f].pickupCoords.lat === null){ //lat will be null if both are null. Hackathon code sucks
 			addressToLatLon(b, function(latLon){
-				console.log(latLon)
 				if(latLon){
 					users[f].pickupCoords = latLon
-					var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". Now send us the address of where you want to go"
+					var m = "Perfect, now send us the address of where you want to go"
 					sendMessage(f, m)
 				}
 				else{
-					sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
+					sendMessage(f, "Sorry, we didn't get your pickup address. Can you check the address and send it again?")
 				}
 				end()
 			})
@@ -139,16 +132,15 @@ app.post("/twilio_webhook", function(req, res){
 			addressToLatLon(b, function(latLon){
 				if(latLon){
 					users[f].dropoffCoords = latLon
-					var m = "Perfect, you're at "+latLon.lat+", "+latLon.lon+". We'll send you an Uber and let you know when its on its way"
-
+					var m = "Perfect, we'll send you an Uber and let you know when its on its way"
 					sendMessage(f, m)
-					sendUber(users[f], function(){
-						//...
+
+					sendUber(users[f], function(){ //this can be replaced with just end, but hackathon code sucks
 						end()
 					})
 				}
 				else{
-					sendMessage(f, "Sorry, we didn't get that. Can you check the address and send it again?")
+					sendMessage(f, "Sorry, we didn't get your dropoff address. Can you check the address and send it again?")
 					end()
 				}
 			})
@@ -170,8 +162,6 @@ app.post("/twilio_webhook", function(req, res){
 
 	}
 	
-	
-
 	function end(){
 		res.status(200);
 		res.end("Aight");
@@ -181,12 +171,8 @@ app.post("/twilio_webhook", function(req, res){
 
 //create webhook to clear location/destination afterwards
 
-function addressToLatLon(s, callback){
-	console.log("started geocoding")
-	console.log(s)
-
+function addressToLatLon(s, callback){ //this should be in its own module, but hackathon code sucks
 	geocoder.geocode(s, function(err, res) {
-		// console.log(err, res)
 		if(err){
 			console.log(err)
 			callback(false)
@@ -194,10 +180,7 @@ function addressToLatLon(s, callback){
 		else{
 			if(res.length > 0){
 				r = res[0]
-				// console.log(r)
 				obj = {lat: r.latitude, lon:r.longitude}
-				// console.log(r.latitude)
-				// console.log(r.longitude)
 				console.log(obj)
 				callback(obj)
 			}
@@ -209,10 +192,7 @@ function addressToLatLon(s, callback){
 	});
 }
 
-
 function sendUber(user, callback, surgeId){
-	console.log(user);
-	console.log("About to send Uber")
 
 	if(surgeId){
 		console.log("ACCEPTING SURGE PRICING!!!!!")
@@ -230,10 +210,6 @@ function sendUber(user, callback, surgeId){
 		requestForm["surge_confirmation_id"] = surgeId
 	}
 
-
-	console.log("SendUber")
-	console.log(user)
-
 	request({
 		headers: {
 			'Authorization': 'Bearer ' + user.accessToken
@@ -245,16 +221,8 @@ function sendUber(user, callback, surgeId){
 		method: "POST"
 		}, function (err, res, body) {
 
-			console.log("GOT RESPONSE")
-			console.log("BODY")
-			console.log(res.body)
-			console.log("END BODY")
-			if(err)
-				console.log(err)
-
-			console.log(typeof res.body)
 			if(typeof res.body == "string")
-				res.body = JSON.parse(res.body)
+				res.body = JSON.parse(res.body) //we don't know why we need this code, but hackathon code sucks
 
 			if(res.body.meta && res.body.meta.surge_confirmation && res.body.meta.surge_confirmation.surge_confirmation_id)
 				return sendUber(user, callback, res.body.meta.surge_confirmation.surge_confirmation_id)
@@ -268,32 +236,18 @@ function sendUber(user, callback, surgeId){
 				sendMessage(user.number, "There was an error ordering your Uber! :(")
 			}
 	});
-
-	
 }
 
 function killUber(user, callback){
-
-	//in success of async call
-	//uberAPIrequest(user, function(e, r){
-		//if(!e)
-			sendMessage(f, "We cancelled your Uber!")
-		//else
-			//sendMessage(f, "Oh no! We couldn't cancel your Uber")
-	//})
-
-
-
 	request({
 		headers: {
 			'Authorization': 'Bearer ' + user.accessToken
 		},
 		uri: "https://api.uber.com/v1/requests/" + user.requestId,
-		body: formData,
 		method: "DELETE"
 		}, function (err, res, body) {
 			if(!err){
-				user.reset()
+				user.resetUser()
 				sendMessage(user.number, "You've cancelled your Uber")
 			}
 			else{
@@ -301,13 +255,10 @@ function killUber(user, callback){
 				sendMessage(user.number, "There was an error cancelling your Uber! :(")
 			}
 	});
-
-
 }
 
 app.get("/", function(req, res){
-	console.log(users);
-	res.end(JSON.stringify(users, null, 2) + "\n\n\n" + JSON.stringify(emailAccessMap, null, 2));
+	res.sendfile('static/landing.html')
 })
 
 var server = app.listen(expressPort, function () {
@@ -342,11 +293,7 @@ app.get("/auth", function(req, res){
 			},function (e, r, body) {
 				if(e)
 					console.log(e)
-				console.log("---me")
 				r.body = JSON.parse(r.body)
-				console.log(r.body)
-				console.log(typeof r.body)
-				console.log(r.body.email)
 				var email = r.body.email;
 				if(emailPhoneMap[email])
 					return end()
@@ -355,20 +302,12 @@ app.get("/auth", function(req, res){
 					unclaimedEmails.push(email.toLowerCase())
 					emailAccessMap[email] = accessToken	
 				}
-				
-				console.log(emailAccessMap)
 
-				console.log("---/me")
 				res.status(200)
 				res.end("Nice work. Now, text " + number + " 'Claim your@email.com', to verify your account.")
 			})
-
-
-
 		}
 	);
-
-
 })
 
 // app.get("/auth", function(req, res){
@@ -415,5 +354,3 @@ app.get("/auth", function(req, res){
 
 
 // })
-
-// console.log(addressToLatLon("7609 Leonard Drive"))

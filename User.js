@@ -19,7 +19,7 @@ User.prototype.ready = function(){
 	return (this.pickupAddress && this.dropoffAddress);
 }
 
-User.prototype.reset = function(){
+User.prototype.resetUser = function(){
 	this.dropoffAddress = null;
 	this.pickupAddress = null;
 	this.pickupCoords = {
