@@ -71,7 +71,7 @@ function sendMessage(toNum, bodyText){
 	client.messages.create({
 		body: bodyText,
 		to: toNum,
-		from: "+16467594338",
+		from: number,
 		}, function(err, message) {
 			if(err){
 				console.log(err)
@@ -271,7 +271,7 @@ var server = app.listen(expressPort, function () {
 
 
 app.get("/verify", function(req, res){
-	res.redirect("http://login.uber.com/oauth/authorize?response_type=code&client_id=" + uberClientId + "&scope=profile%20history_lite%20history%20request")
+	res.redirect("http://login.uber.com/oauth/authorize?response_type=code&client_id=" + uberClientId + "&scope=profile%20request")
 })
 
 app.get("/auth", function(req, res){
@@ -283,7 +283,9 @@ app.get("/auth", function(req, res){
 			authorization_code: authCode
 		}, 
 		function (err, accessToken, refreshToken) {
-
+			if(err)
+				console.log(err)
+			console.log("Got token", accessToken)
 			request(
 			{
 				headers: {
