@@ -236,7 +236,7 @@ function sendUber(user, callback, surgeId){
 			if(typeof res.body == "string")
 				res.body = JSON.parse(res.body) //we don't know why we need this code, but hackathon code sucks
 
-			if(res.body.meta && res.body.meta.surge_confirmation && res.body.meta.surge_confirmation.surge_confirmation_id)
+			if(!surgeId && res.body.meta && res.body.meta.surge_confirmation && res.body.meta.surge_confirmation.surge_confirmation_id)
 				return sendUber(user, callback, res.body.meta.surge_confirmation.surge_confirmation_id)
 
 			if(!err){
