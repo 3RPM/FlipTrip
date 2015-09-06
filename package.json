@@ -1,5 +1,5 @@
 {
-  "name": "PennAppsXII",
+  "name": "FlipTrip",
   "version": "1.0.0",
   "description": "Uber for Dumb-Phones",
   "main": "app.js",
@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://github.com/3RPM/PennAppsXII"
+    "url": "http://github.com/3RPM/FlipTrip"
   },
-  "author": "Rushi Shah (@2016rshah)",
+  "author": "Rushi Shah (@2016rshah), Pierce Stegman (@pwstegman), Matthew Kaufer (@mjkaufer)",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/3RPM/PennAppsXII/issues"
+    "url": "https://github.com/3RPM/FlipTrip/issues"
   },
-  "homepage": "https://github.com/3RPM/PennAppsXII",
+  "homepage": "https://github.com/3RPM/FlipTrip",
   "devDependencies": {},
   "dependencies": {
     "body-parser": "^1.13.3",
