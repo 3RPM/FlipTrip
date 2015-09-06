@@ -1,7 +1,32 @@
-#Uber for Dumb Phones
+# Uber for Dumb Phones
 
 This provides a way for those without smartphones to request Uber rides. It provides a SMS interface that can be accessed from any text-messaging capable device. Made at PennAppsXII. 
 
-To try it out, clone the repo then run `npm install` to install dependencies. 
+## Installation
 
-(@Matthew and @Pierce, don't forget to change the URL Twilio posts to to your ngrok URL)
+* Clone the repo and run `npm install`
+* Copy `config.sample.json` to `config.json` and input the appropriate values
+	* For the Uber API, you will have to request permission to use the `request` endpoint in order to order Ubers
+* In your Twilio control panel, configure a webhook to point a POST request to `http://your.url/twilio_webhook`
+* Run `node app.js` to start your server
+
+## Usage
+
+* Navigate to `http://your.url/verify`, and grant Uber permission
+* Text the number you configured `hmu` or `send me an uber`
+* Text in your location
+* Text in your destination
+* Await your Uber!
+* Text `stop` or `cancel` to cancel your Uber
+
+
+## WARNING
+
+This is in beta. Use at your own risk.
+
+
+## Todo
+
+* Add `help`
+* Clean code
+* Give updates via text about driver's location

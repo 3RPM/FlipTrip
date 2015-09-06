@@ -22,7 +22,7 @@ var User = require("./User")
 
 var phillyUberXId = "1a150e95-d687-454b-9878-2942a9448693"
 
-var expressPort = 3000;
+var expressPort = config["PORT"];
 
 var bodyParser = require("body-parser");
 var express = require('express');
@@ -85,7 +85,7 @@ function sendMessage(toNum, bodyText){
 	});
 }
 
-app.post("/", function(req, res){
+app.post("/twilio_webhook", function(req, res){
 	var f = req.body.From
 	var b = req.body.Body
 
@@ -261,7 +261,7 @@ function sendUber(user, callback, surgeId){
 
 			if(!err){
 				users[user.number].requestId = res.body["request_id"]
-				sendMessage(user.number, "Excellent! Your Uber will arrive in around " + res.body.eta + " minutes - we'll text you some details before then! If you wish to cancel your ride, text 'Stop' or 'Cancel'")
+				sendMessage(user.number, "Excellent! Your Uber will arrive soon - we'll text you some details before then! If you wish to cancel your ride, text 'Stop' or 'Cancel'")
 			}
 			else{
 				console.log(err)
