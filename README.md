@@ -3,6 +3,8 @@
 
 This provides a way for those without smartphones to request Uber rides. It provides a SMS interface that can be accessed from any text-messaging capable device. Made at PennAppsXII. 
 
+![screen shot](screen_shot.png)
+
 ## Installation
 
 * Clone the repo and run `npm install`
