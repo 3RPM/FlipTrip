@@ -109,8 +109,16 @@ app.post("/twilio_webhook", function(req, res){
 		
 	}
 	else if(users[f]){
-
-		if(startPhrases.indexOf(b.toLowerCase()) > -1){
+		if(b.toLowerCase() == "?"){
+			sendMessage(f, 
+				"Text `hmu` to start ordering a ride\n" +
+				"Then, text your current location\n" + 
+				"Then, text your desired destination\n" +
+				"Your Uber should then be on its way!\n" +
+				"To cancel an Uber, text `jk`"
+				)
+		}
+		else if(startPhrases.indexOf(b.toLowerCase()) > -1){
 			sendMessage(f, "To get started, send us the address of where you are now!")
 
 			users[f].resetUser() 
@@ -161,6 +169,9 @@ app.post("/twilio_webhook", function(req, res){
 			end()
 		}
 
+	} else {
+		sendMessage(f, "To use FlipTrip, make an Uber account, then log in on your computer by going to http://localhost:" + expressPort + ". Then, text in 'claim your@email.com'!")
+		end()
 	}
 	
 	function end(){

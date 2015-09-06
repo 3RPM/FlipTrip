@@ -1,4 +1,5 @@
-# Uber for Dumb Phones
+# FlipTrip
+##### Uber for Dumb Phones
 
 This provides a way for those without smartphones to request Uber rides. It provides a SMS interface that can be accessed from any text-messaging capable device. Made at PennAppsXII. 
 
@@ -17,7 +18,8 @@ This provides a way for those without smartphones to request Uber rides. It prov
 * Text in your location
 * Text in your destination
 * Await your Uber!
-* Text `stop` or `cancel` to cancel your Uber
+* Text `jk` to cancel your Uber
+* Text `?` for help
 
 
 ## WARNING
@@ -27,6 +29,5 @@ This is in beta. Use at your own risk.
 
 ## Todo
 
-* Add `help`
 * Clean code
 * Give updates via text about driver's location
