@@ -318,7 +318,7 @@ app.get("/auth", function(req, res){
 				}
 
 				res.status(200)
-				res.end("Nice work. Now, text " + number + " 'Claim your@email.com', to verify your account.")
+				res.end("Nice work. Now, text " + number + " 'claim "+email+"', to verify your account.")
 			})
 		}
 	);
