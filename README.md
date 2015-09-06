@@ -1,7 +1,9 @@
 # FlipTrip
 ##### Uber for Dumb Phones
 
-This provides a way for those without smartphones to request Uber rides. It provides a SMS interface that can be accessed from any text-messaging capable device. Made at PennAppsXII. 
+FlipTrip gives Uber access to those without smartphones. Using FlipTrip's simple SMS interface, now *any* phone can request an Uber!
+
+Made at PennAppsXII
 
 ![screen shot](https://raw.githubusercontent.com/3RPM/FlipTrip/master/screen_shot.png)
 
